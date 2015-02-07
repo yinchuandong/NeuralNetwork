@@ -13,8 +13,17 @@ public class BP {
 	private double[][] inHideW;
 	private double[][] hideOutW;
 	
-	private double[] hideErr;
-	private double[] outErr;
+	/**
+	 * save the old delta weight of in-hide layer
+	 */
+	private double[][] inHideOldW;
+	/**
+	 * save the old delta weight of hide-out layer
+	 */
+	private double[][] hideOutOldW;
+	
+	private double[] hideDelta;
+	private double[] outDelta;
 	
 	private double outErrSum;
 	private double hideErrSum;
@@ -37,27 +46,34 @@ public class BP {
 		this.out = new double[outSize + 1];
 		this.target = new double[outSize + 1];
 		
-		this.hideErr = new double[hideSize + 1];
-		this.outErr = new double[outSize + 1];
+		this.hideDelta = new double[hideSize + 1];
+		this.outDelta = new double[outSize + 1];
 		
 		//increasing row size is to add W0*X0 as threshold
 		this.inHideW = new double[hideSize + 1][inSize + 1];
 		this.hideOutW = new double[outSize + 1][hideSize + 1];
+		this.inHideOldW = new double[hideSize + 1][inSize + 1];
+		this.hideOutOldW = new double[outSize + 1][hideSize + 1];
 		
 		this.eta = eta;
 		this.momentum = momentum;
 		
+		this.random = new Random();
 		randomInit(inHideW);
 		randomInit(hideOutW);
 	}
 	
 	private void randomInit(double[][] weight){
 		for (int j = 0; j < weight.length; j++) {
-			for (int i = 1; i < weight[j].length; i++) {
+			for (int i = 0; i < weight[j].length; i++) {
 				double real = random.nextDouble();
 				weight[j][i] = real > 0.5 ? real : - real;
 			}
 		}
+	}
+	
+	public void setEta(double eta){
+		this.eta = eta;
 	}
 	
 	public void train(double[] trainData, double[] target){
@@ -68,7 +84,7 @@ public class BP {
 		adjustWeight();
 	}
 	
-	public double[] predict(double[] inData){
+	public double[] test(double[] inData){
 		if(inData.length != in.length - 1){
 			throw new IllegalArgumentException("In Size Do Not Match.");
 		}
@@ -113,8 +129,8 @@ public class BP {
 	}
 	
 	private void adjustWeight(){
-		adjustWeight(hide, outErr, hideOutW);
-		adjustWeight(in, hideErr, inHideW);
+		adjustWeight(hide, outDelta, hideOutW, hideOutOldW);
+		adjustWeight(in, hideDelta, inHideW, inHideOldW);
 	}
 	
 	private void forward(double[] in, double[] out, double[][] w){
@@ -124,17 +140,19 @@ public class BP {
 			for (int i = 0; i < in.length; i++) {
 				sum += w[j][i] * in[i];
 			}
-			out[j] = sigmoid(sum);
+			double t = sigmoid(sum);
+			out[j] = t;
 		}
 	}
 	
 	private void calcOutErr(){
 		double sum = 0.0;
-		for (int i = 1; i < outErr.length; i++) {
-			double t = target[i];
-			double o = out[i];
-			double e = o * (1 - o) * (t - o);
-			outErr[i] = e;
+		for (int j = 1; j < outDelta.length; j++) {
+			double t = target[j];
+			double o = out[j];
+//			double e = o * (1.0 - o) * (t - o);
+			double e = Math.exp(-o) / ((1 + Math.exp(-o)) * (1 + Math.exp(-o))) * (t - o);
+			outDelta[j] = e;
 			sum += Math.abs(e);
 		}
 		this.outErrSum = sum;
@@ -142,30 +160,32 @@ public class BP {
 	
 	private void calcHideError(){
 		double sum = 0.0;
-		for (int i = 1; i < hideErr.length; i++) {
-			double o = hide[i];
+		for (int j = 1; j < hideDelta.length; j++) {
+			double o = hide[j];
 			double tmpS = 0.0;
-			for (int j = 0; j < outErr.length; j++) {
-				tmpS += hideOutW[j][i + 1] * out[j];
+			for (int k = 1; k < outDelta.length; k++) {
+				tmpS += hideOutW[k][j] * outDelta[k];
 			}
-			double e = o * (1 - o) * tmpS;
-			hideErr[i] = e;
+//			double e = o * (1.0 - o) * tmpS;
+			double e = Math.exp(-o) / ((1 + Math.exp(-o)) * (1 + Math.exp(-o))) * tmpS;
+			hideDelta[j] = e;
 			sum += e;
 		}
 		this.hideErrSum = sum;
 	}
 	
-	private void adjustWeight(double[] in, double[] delta, double[][] w){
+	private void adjustWeight(double[] in, double[] delta, double[][] w, double[][] oldW){
 		for (int j = 1; j < delta.length; j++) {
 			for (int i = 0; i < in.length; i++) {
-				double deltaW = eta * delta[j] * in[i] + momentum * w[j][i];
+				double deltaW = eta * delta[j] * in[i] + momentum * oldW[j][i];
 				w[j][i] += deltaW;
+				oldW[j][i] = deltaW;
 			}
 		}
 	}
 	
 	private double sigmoid(double x){
-		return 1.0 / (1.0 + Math.exp( - x ));
+		return 1d / (1d + Math.exp( - x ));
 	}
 	
 	

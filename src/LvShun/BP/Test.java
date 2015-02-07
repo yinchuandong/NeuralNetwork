@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import YCD.BPANN.BP;
+
 
 /**
  * Test BPNN.
@@ -20,7 +22,7 @@ public class Test {
 //
 //         System.out.print(i+" ");
 
-        int total = 0;
+        int total = -1;
         double[][] input = new double[3900][64];
         double[][] output = new double[3900][10];
         BufferedReader reader;
@@ -139,15 +141,23 @@ public class Test {
             int max = 1000;
             int cishu = 0;
             //for (int u = 10; u < 200; u++) {
-                BP bp = new BP(64, 118, 10);
+                BP2 bp = new BP2(64, 118, 10);
+//                BP bp = new BP(64, 118, 10, 1.7, 1.0);
                 //System.out.print(u + ": ");
-                for (int r = 0; r < 600; r++) {
-                    for (int p = 0; p < total; p++)
-                        bp.train(input[p], output[p], 1.7 - 0.3 * r / 600);
+//                for (int r = 0; r < 600; r++) {
+//                    for (int p = 0; p < total; p++)
+//                        bp.train(input[p], output[p], 1.7 - 0.3 * r / 600);
+//                }
+                
+                for (int p = 0; p < total; p++){
+                	bp.train(input[p], output[p], 1.7);
+//                	bp.train(input[p], output[p]);
                 }
+                
                 int correct = 0;
                 for (int h = 0; h < 1517; h++) {
                     double outputi[] = bp.test(inputi[h]);
+
                     int result = 0;
                     for (int j = 0; j < 10; j++) {
                         if (outputi[result] < (int) outputi[j])

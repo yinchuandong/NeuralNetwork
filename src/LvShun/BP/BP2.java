@@ -9,7 +9,7 @@ import java.util.Random;
  * @author LvShun
  *
  */
-public class BP {
+public class BP2 {
 	/**
 	 * input vector.
 	 */
@@ -68,7 +68,7 @@ public class BP {
 	 * 构造函数 这里把阈值直接加入的结果 所以数组大小要加1
 	 *
 	 */
-	public BP(int inputSize, int hiddenSize, int outputSize, double eta) {
+	public BP2(int inputSize, int hiddenSize, int outputSize, double eta) {
 
 		input = new double[inputSize + 1];
 		hidden = new double[hiddenSize + 1];
@@ -108,7 +108,7 @@ public class BP {
 	 *
 	 *
 	 */
-	public BP(int inputSize, int hiddenSize, int outputSize) {
+	public BP2(int inputSize, int hiddenSize, int outputSize) {
 		this(inputSize, hiddenSize, outputSize, 1.7);
 	}
 
@@ -211,6 +211,7 @@ public class BP {
 		for (int idx = 1, len = optDelta.length; idx != len; ++idx) {
 			double o = output[idx];
 			optDelta[idx] = Math.exp(-o) / ((1 + Math.exp(-o)) * (1 + Math.exp(-o))) * (target[idx] - o);
+//			optDelta[idx] = o * (1 - o) * (target[idx] - o);
 			errSum += Math.abs(optDelta[idx]);
 		}
 		optErrSum = errSum;
@@ -228,6 +229,7 @@ public class BP {
 			for (int k = 1, len2 = optDelta.length; k != len2; ++k)
 				sum += hidOptWeights[j][k] * optDelta[k];
 			hidDelta[j] = Math.exp(-o) / ((1 + Math.exp(-o)) * (1 + Math.exp(-o))) * sum;
+//			hidDelta[j] = o * (1 - o) * sum;
 			errSum += Math.abs(hidDelta[j]);
 		}
 		hidErrSum = errSum;
